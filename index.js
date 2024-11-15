@@ -1,51 +1,27 @@
 const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
+
+const mongoose = require('mongoose');
+const userRoutes=require('./src/route/shfe')
+
+// Importing Metal model
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.use('/api', userRoutes);
+// MongoDB connection
+mongoose.connect('mongodb+srv://Rahul:myuser@rahul.fack9.mongodb.net/SHFESCRAP?authSource=admin&replicaSet=atlas-117kuv-shard-0&w=majority&readPreference=primary&retryWrites=true&ssl=true', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(error => console.error("MongoDB connection error:", error));
 
-const url = 'https://www.metal.com/price';
+// Metal name translation from Chinese to English
 
-async function scrapeMainContractPrice() {
-    try {
-        const { data } = await axios.get(url);
-        const $ = cheerio.load(data);
-        
-        const priceData = [];
 
-        $('#MainContractPrice .rowContent___uTGWR').each((index, element) => {
-            const cols = $(element).find('.item___ku9Fy');
-            if (cols.length) {
-                const rowData = {
-                    description: $(cols[0]).text().trim().slice(0,2),
-                    price: $(cols[1]).text().trim(),
-                    open: $(cols[2]).text().trim(),
-                    high: $(cols[3]).text().trim(),
-                    low: $(cols[4]).text().trim(),
-                    volume: $(cols[5]).text().trim(),
-                    change: $(cols[6]).text().trim()
-                };
-                priceData.push(rowData);
-            }
-        });
 
-        return priceData;
-    } catch (error) {
-        console.error('Error fetching the webpage:', error);
-        throw error; // Re-throw the error to handle it in the API route
-    }
-}
 
-app.get('/api/shfe-prices', async (req, res) => {
-    try {
-        const prices = await scrapeMainContractPrice();
-        res.json(prices);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch prices' });
-    }
-});
-
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
